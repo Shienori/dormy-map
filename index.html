@@ -357,7 +357,7 @@ async function fetchPrices(){
         const hi =Array.isArray(item)?item[0]:item;
         const hb =(hi&&hi.hotelBasicInfo)?hi.hotelBasicInfo:{};
         const rno=hb.hotelNo;
-        const minCharge=hb.hotelMinCharge;
+        const hotelArr=Array.isArray(item)?item:[item];const ri=hotelArr[1]&&hotelArr[1].roomInfo?hotelArr[1].roomInfo:[];const minCharge=(ri[1]&&ri[1].dailyCharge?ri[1].dailyCharge.total:ri[0]&&ri[0].dailyCharge?ri[0].dailyCharge.total:null)||hb.hotelMinCharge;
         if(rno&&minCharge){
           livePrice[rno]={price:minCharge,updated:new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}),checkin};
           fetched++;
