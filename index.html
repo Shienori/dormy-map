@@ -80,9 +80,9 @@ input,select{font:inherit;color:inherit}
 .bn{background:color-mix(in oklch,var(--nono) 15%,transparent);color:var(--nono)}
 .hmeta{font-size:.6875rem;color:var(--muted);display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
 .pchip{font-size:.6875rem;font-weight:700;padding:.1rem .45rem;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--offset)}
-..pc-lo{color:#437a22;border-color:oklch(from #437a22 l c h/.45)}.pc-mid{color:#2d8fbf;border-color:oklch(from #2d8fbf l c h/.45)}{color:#437a22;border-color:oklch(from #437a22 l c h/.45)}
+.pc-lo{color:#22863a;border-color:oklch(from #22863a l c h/.45)} .pc-mid{color:#2d8fbf;border-color:oklch(from #2d8fbf l c h/.45)}
 .pc-mi{color:#b07d00;border-color:oklch(from #b07d00 l c h/.45)}
-.pc-hi{color:#b5522a;border-color:oklch(from #b5522a l c h/.45)}
+.pc-hi{color:#b5522a;border-color:oklch(from #b5522a l c h/.45)} .pc-gray{color:#888;border-color:oklch(from #888 l c h/.45)} .pc-gray{color:#888;border-color:oklch(from #888 l c h/.45)} .pc-gray{color:#888;border-color:oklch(from #888 l c h/.45)}
 .pc-live{color:var(--primary);border-color:oklch(from var(--primary) l c h/.45)}
 #count-bar{padding:.3rem .875rem;font-size:.6875rem;color:var(--muted);border-top:1px solid var(--divider);flex-shrink:0}
 #price-legend{position:absolute;bottom:1.5rem;left:1rem;z-index:800;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:.55rem .8rem;box-shadow:var(--shadow);font-size:.6875rem}
@@ -153,7 +153,7 @@ input,select{font:inherit;color:inherit}
     <div class="lr"><div class="lsw" style="background:#2d8fbf"></div>〜9,000円</div>
     <div class="lr"><div class="lsw" style="background:#b07d00"></div>〜12,000円</div>
     <div class="lr"><div class="lsw" style="background:#b5522a"></div>12,000円超</div>
-    <div class="lr"><div class="lsw" style="background:#888"></div>参考値/未取得</div>
+    <div class="lr"><div class="lsw" style="background:#888"></div>参考値/未取得</div><div class="lr"><div class="lsw" style="background:var(--primary)"></div><span>取得済み</span></div>
   </div>
   <aside id="sidebar">
     <div id="sb-head">
@@ -233,7 +233,7 @@ const today = () => new Date().toISOString().slice(0,10);
 const isDark = () => document.documentElement.getAttribute("data-theme")==="dark";
 
 function priceColor(p,live){ if(live)return"var(--primary)"; if(!p)return"#888"; if(p<=6000)return"#22863a"; if(p<=9000)return"#2d8fbf"; if(p<=12000)return"#b07d00"; return"#b5522a"; }
-function priceClass(p,live){ if(live)return"pc-live"; if(!p)return""; if(p<=6000)return"pc-lo"; if(p<=9000)return"pc-mid"; if(p<=12000)return"pc-mi"; return"pc-hi"; }
+function priceClass(p,live){ if(live)return"pc-live"; if(!p)return"pc-gray"; if(p<=6000)return"pc-lo"; if(p<=9000)return"pc-mid"; if(p<=12000)return"pc-mi"; return"pc-hi"; }
 function fmtPrice(p){ return p?"¥"+p.toLocaleString():"未設定"; }
 function getDP(h){ const lp=livePrice[h.hotelNo]; if(lp)return{price:lp.price,live:true,updated:lp.updated,checkin:lp.checkin}; return{price:h.price,live:false,updated:null}; }
 
