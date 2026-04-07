@@ -1,232 +1,455 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ドーミーイン価格マップ dormy-map-20260407-1450</title>
+<title>ドーミーイン・野乃 全国価格マップ 20260407-1325</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; }
-  #controls {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    background: #16213e; padding: 10px 16px; display: flex; flex-wrap: wrap;
-    gap: 8px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  }
-  #controls label { font-size: 12px; color: #aaa; }
-  #controls input[type="text"], #controls input[type="password"], #controls input[type="date"] {
-    background: #0f3460; color: #eee; border: 1px solid #444; border-radius: 4px;
-    padding: 4px 8px; font-size: 13px; width: 180px;
-  }
-  #controls input[type="date"] { width: 130px; }
-  #fetchBtn {
-    background: #e94560; color: #fff; border: none; border-radius: 4px;
-    padding: 6px 16px; font-size: 13px; cursor: pointer; font-weight: bold;
-  }
-  #fetchBtn:hover { background: #c73652; }
-  #fetchBtn:disabled { background: #555; cursor: not-allowed; }
-  #status { font-size: 12px; color: #aaa; margin-left: 8px; }
-  #map { position: fixed; top: 110px; left: 0; right: 0; bottom: 0; }
-  .leaflet-popup-content { font-size: 13px; }
-  .price-tag {
-    background: #e94560; color: #fff; padding: 2px 6px;
-    border-radius: 4px; font-size: 12px; font-weight: bold;
-    white-space: nowrap; border: 2px solid #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
-  }
-  .price-tag.no-vacancy { background: #555; }
+:root,[data-theme="light"]{
+  --bg:#f7f6f2;--surface:#f9f8f5;--surface2:#fbfbf9;--offset:#f3f0ec;
+  --border:#d4d1ca;--divider:#dcd9d5;
+  --text:#28251d;--muted:#7a7974;--faint:#bab9b4;
+  --primary:#01696f;--primary-h:#0c4e54;
+  --dormy:#2a7db5;--nono:#b5522a;
+  --shadow:0 4px 16px oklch(0.2 0.01 80/0.12);
+  --r-sm:.375rem;--r-md:.5rem;--r-lg:.75rem;--tr:180ms cubic-bezier(.16,1,.3,1);
+}
+[data-theme="dark"]{
+  --bg:#171614;--surface:#1c1b19;--surface2:#201f1d;--offset:#22211f;
+  --border:#393836;--divider:#262523;
+  --text:#cdccca;--muted:#797876;--faint:#5a5957;
+  --primary:#4f98a3;--primary-h:#227f8b;
+  --dormy:#5aaedf;--nono:#df8a5a;
+  --shadow:0 4px 16px oklch(0 0 0/.35);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+input,select{font:inherit;color:inherit}
+#hdr{display:flex;align-items:center;gap:.75rem;padding:.5rem 1rem;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+#logo{display:flex;align-items:center;gap:.5rem;font-weight:700;font-size:.9375rem;white-space:nowrap}
+.legend-pills{display:flex;gap:.375rem;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:9999px;font-size:.6875rem;font-weight:600;border:1.5px solid}
+.pill-dormy{border-color:var(--dormy);color:var(--dormy)}
+.pill-nono{border-color:var(--nono);color:var(--nono)}
+.dot{width:8px;height:8px;border-radius:50%}
+#theme-btn{padding:.3rem;border-radius:var(--r-md);color:var(--muted);margin-left:auto}
+#theme-btn:hover{color:var(--text);background:var(--offset)}
+#ctrl-bar{display:flex;align-items:center;gap:.625rem;padding:.5rem 1rem;background:var(--surface2);border-bottom:1px solid var(--divider);flex-shrink:0;flex-wrap:wrap}
+#ctrl-bar label{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.ctrl-input{padding:.35rem .6rem;font-size:.8125rem;background:var(--offset);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);outline:none;transition:border-color var(--tr)}
+.ctrl-input:focus{border-color:var(--primary)}
+.ctrl-input::placeholder{color:var(--faint)}
+#apikey-input{width:210px}
+#accesskey-input{width:210px}
+#fetch-btn{padding:.35rem .9rem;font-size:.75rem;font-weight:700;background:var(--primary);color:#fff;border-radius:var(--r-md);white-space:nowrap;transition:background var(--tr)}
+#fetch-btn:hover{background:var(--primary-h)}
+#fetch-btn:disabled{opacity:.5;cursor:not-allowed}
+#fetch-status{font-size:.75rem;color:var(--muted)}
+#app{flex:1;display:flex;overflow:hidden;position:relative}
+#map{flex:1;height:100%}
+#sidebar{width:300px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#sb-head{padding:.75rem .875rem .625rem;border-bottom:1px solid var(--divider);flex-shrink:0}
+#sb-head h2{font-size:.875rem;font-weight:700;margin-bottom:.5rem}
+#search{width:100%;padding:.4rem .6rem;background:var(--offset);border:1px solid var(--border);border-radius:var(--r-md);font-size:.8125rem;color:var(--text);outline:none;transition:border-color var(--tr)}
+#search:focus{border-color:var(--primary)}
+#search::placeholder{color:var(--faint)}
+.filter-row{display:flex;gap:.3rem;margin-top:.4rem}
+.fbtn{flex:1;padding:.25rem .4rem;font-size:.6875rem;border-radius:var(--r-sm);border:1.5px solid var(--border);color:var(--muted);background:transparent;font-weight:600;transition:border-color var(--tr),color var(--tr),background var(--tr)}
+.fbtn.fa{border-color:var(--primary);background:color-mix(in oklch,var(--primary) 12%,transparent);color:var(--primary)}
+.fbtn.fd{border-color:var(--dormy);background:color-mix(in oklch,var(--dormy) 12%,transparent);color:var(--dormy)}
+.fbtn.fn{border-color:var(--nono);background:color-mix(in oklch,var(--nono) 12%,transparent);color:var(--nono)}
+#sort-row{display:flex;align-items:center;gap:.375rem;padding:.4rem .875rem;border-bottom:1px solid var(--divider);flex-shrink:0}
+#sort-row label{font-size:.6875rem;color:var(--muted);white-space:nowrap}
+#sort-sel{flex:1;padding:.2rem .35rem;font-size:.6875rem;background:var(--offset);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);outline:none}
+#hotel-list{flex:1;overflow-y:auto;padding:.4rem}
+#hotel-list::-webkit-scrollbar{width:4px}
+#hotel-list::-webkit-scrollbar-thumb{background:var(--divider);border-radius:9999px}
+.hcard{padding:.625rem .75rem;border-radius:var(--r-md);border:1px solid transparent;cursor:pointer;margin-bottom:.3rem;transition:background var(--tr),border-color var(--tr)}
+.hcard:hover{background:var(--offset);border-color:var(--border)}
+.hcard.sel{background:var(--surface2);border-color:var(--primary)}
+.hcard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.4rem;margin-bottom:.2rem}
+.hname{font-size:.8125rem;font-weight:700;line-height:1.3;flex:1}
+.bbadge{font-size:.625rem;font-weight:700;padding:.1rem .45rem;border-radius:9999px;white-space:nowrap;flex-shrink:0}
+.bd{background:color-mix(in oklch,var(--dormy) 15%,transparent);color:var(--dormy)}
+.bn{background:color-mix(in oklch,var(--nono) 15%,transparent);color:var(--nono)}
+.hmeta{font-size:.6875rem;color:var(--muted);display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.pchip{font-size:.6875rem;font-weight:700;padding:.1rem .45rem;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--offset)}
+.pc-lo{color:#437a22;border-color:oklch(from #437a22 l c h/.45)}
+.pc-mi{color:#b07d00;border-color:oklch(from #b07d00 l c h/.45)}
+.pc-hi{color:#b5522a;border-color:oklch(from #b5522a l c h/.45)}
+.pc-live{color:var(--primary);border-color:oklch(from var(--primary) l c h/.45)}
+#count-bar{padding:.3rem .875rem;font-size:.6875rem;color:var(--muted);border-top:1px solid var(--divider);flex-shrink:0}
+#price-legend{position:absolute;bottom:1.5rem;left:1rem;z-index:800;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:.55rem .8rem;box-shadow:var(--shadow);font-size:.6875rem}
+#price-legend h4{font-size:.6875rem;font-weight:700;margin-bottom:.3rem;color:var(--muted)}
+.lr{display:flex;align-items:center;gap:.4rem;margin-bottom:.15rem}
+.lsw{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.mpinwrap{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.mbub{min-width:54px;padding:.175rem .4rem;border-radius:var(--r-md);font-weight:700;font-size:.625rem;color:#fff;text-align:center;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);border:1.5px solid rgba(255,255,255,.2)}
+.leaflet-popup-content-wrapper{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:var(--r-lg)!important;box-shadow:var(--shadow)!important;color:var(--text)!important;font-family:'Noto Sans JP',sans-serif!important;padding:0!important}
+.leaflet-popup-tip-container{display:none}
+.leaflet-popup-content{margin:0!important;min-width:230px}
+.popi{padding:.875rem 1rem}
+.pop-brand{font-size:.625rem;font-weight:700;margin-bottom:.2rem}
+.pop-name{font-size:.9375rem;font-weight:700;margin-bottom:.3rem;line-height:1.3}
+.pop-price{font-size:1.375rem;font-weight:700;margin-bottom:.2rem}
+.pop-price span{font-size:.6875rem;font-weight:400;color:var(--muted)}
+.pop-meta{font-size:.6875rem;color:var(--muted);margin-bottom:.15rem}
+.pop-updated{font-size:.625rem;color:var(--faint);margin-bottom:.3rem}
+.pop-hr{border:none;border-top:1px solid var(--divider);margin:.45rem 0}
+.pop-link{display:inline-flex;align-items:center;gap:.25rem;font-size:.6875rem;font-weight:600;color:var(--primary);text-decoration:none}
+.pop-link:hover{color:var(--primary-h)}
+.pop-note{font-size:.5625rem;color:var(--faint);margin-top:.3rem}
+#sb-toggle{display:none;position:absolute;bottom:1.5rem;right:1rem;z-index:900;background:var(--primary);color:#fff;border-radius:9999px;padding:.6rem .9rem;font-size:.875rem;font-weight:700;box-shadow:0 4px 16px oklch(from var(--primary) l c h/.4)}
+@media(max-width:768px){
+  #sidebar{position:absolute;right:0;top:0;bottom:0;transform:translateX(100%);transition:transform .25s ease;z-index:700;width:min(100vw,300px)}
+  #sidebar.open{transform:translateX(0)}
+  #sb-toggle{display:block}
+  #price-legend{bottom:5rem}
+  #apikey-input,#accesskey-input{width:130px}
+}
 </style>
-//unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
+<header id="hdr">
+  <div id="logo">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-label="logo">
+      <rect x="1" y="1" width="24" height="24" rx="6" fill="var(--primary)" opacity=".15"/>
+      <path d="M13 4 Q19 4 19 10 L19 22 M13 4 Q7 4 7 10 L7 22" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <circle cx="13" cy="14" r="2.5" fill="var(--primary)"/>
+    </svg>
+    <span>ドーミーイン・野乃 価格マップ <span style="font-size:.625rem;opacity:.5;font-weight:400">20260407-1325</span></span>
+  </div>
+  <div class="legend-pills">
+    <div class="pill pill-dormy"><span class="dot" style="background:var(--dormy)"></span>ドーミーイン</div>
+    <div class="pill pill-nono"><span class="dot" style="background:var(--nono)"></span>御宿 野乃</div>
+  </div>
+  <button id="theme-btn" aria-label="テーマ切替">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
 
-<div id="controls">
-  <div>
-    abel>アプリID</label><br>
-    <input type="text" id="appId" placeholder="UUID形式のアプリID" style="width:220px;">
-  </div>
-  <div>
-    abel>アクセスキー</label><br>
-    <input type="password" id="accessKey" placeholder="pk_..." style="width:220px;">
-  </div>
-  <div>
-    abel>チェックイン</label><br>
-    <input type="date" id="checkin">
-  </div>
-  <div>
-    abel>チェックアウト</label><br>
-    <input type="date" id="checkout">
-  </div>
-  <div style="align-self:flex-end;">
-    <button id="fetchBtn" onclick="fetchPrices()">価格を取得</button>
-  </div>
-  <span id="status"></span>
+<div id="ctrl-bar">
+  <label for="date-pick">📅 チェックイン日</label>
+  <input type="date" id="date-pick" class="ctrl-input">
+  <label for="apikey-input">🔑 アプリID</label>
+  <input type="text" id="apikey-input" class="ctrl-input" placeholder="UUID形式" autocomplete="off" spellcheck="false">
+  <label for="accesskey-input">🔐 アクセスキー</label>
+  <input type="password" id="accesskey-input" class="ctrl-input" placeholder="pk_..." autocomplete="off" spellcheck="false">
+  <button id="fetch-btn">価格を取得</button>
+  <span id="fetch-status">アプリID・アクセスキーを入力して取得してください</span>
 </div>
 
-<div id="map"></div>
+<div id="app">
+  <div id="map"></div>
+  <div id="price-legend">
+    <h4>価格帯（1泊・1室）</h4>
+    <div class="lr"><div class="lsw" style="background:#22863a"></div>〜6,000円</div>
+    <div class="lr"><div class="lsw" style="background:#2d8fbf"></div>〜9,000円</div>
+    <div class="lr"><div class="lsw" style="background:#b07d00"></div>〜12,000円</div>
+    <div class="lr"><div class="lsw" style="background:#b5522a"></div>12,000円超</div>
+    <div class="lr"><div class="lsw" style="background:#888"></div>参考値/未取得</div>
+  </div>
+  <aside id="sidebar">
+    <div id="sb-head">
+      <h2>ホテル一覧 <span id="total-cnt" style="font-weight:400;color:var(--muted)"></span></h2>
+      <input id="search" type="search" placeholder="ホテル名・都市で検索…">
+      <div class="filter-row">
+        <button class="fbtn fa" data-f="all">すべて</button>
+        <button class="fbtn" data-f="dormy">ドーミーイン</button>
+        <button class="fbtn" data-f="nono">御宿 野乃</button>
+      </div>
+    </div>
+    <div id="sort-row">
+      <label for="sort-sel">並べ替え</label>
+      <select id="sort-sel">
+        <option value="name">名前順</option>
+        <option value="price-asc">価格 低い順</option>
+        <option value="price-desc">価格 高い順</option>
+        <option value="pref">都道府県順</option>
+      </select>
+    </div>
+    <div id="hotel-list"></div>
+    <div id="count-bar"></div>
+  </aside>
+</div>
+<button id="sb-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">一覧 ☰</button>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ドーミーインホテル一覧（hotelNo, 名称, 緯度, 経度）
-const hotels = [
-  { no: 104566, name: "ドーミーイン札幌",           lat: 43.0621, lng: 141.3544 },
-  { no: 14019,  name: "ドーミーイン仙台",           lat: 38.2682, lng: 140.8694 },
-  { no: 56534,  name: "ドーミーイン大宮",           lat: 35.9064, lng: 139.6233 },
-  { no: 77940,  name: "ドーミーイン池袋",           lat: 35.7295, lng: 139.7109 },
-  { no: 50775,  name: "ドーミーイン新宿",           lat: 35.6938, lng: 139.7036 },
-  { no: 12695,  name: "ドーミーイン渋谷神泉",       lat: 35.6548, lng: 139.6942 },
-  { no: 172226, name: "ドーミーイン新橋",           lat: 35.6658, lng: 139.7578 },
-  { no: 39980,  name: "ドーミーイン秋葉原",         lat: 35.7027, lng: 139.7733 },
-  { no: 69382,  name: "ドーミーイン川崎",           lat: 35.5310, lng: 139.7029 },
-  { no: 76876,  name: "ドーミーイン横浜",           lat: 35.4437, lng: 139.6380 },
-  { no: 51690,  name: "ドーミーイン名古屋",         lat: 35.1709, lng: 136.8815 },
-  { no: 168253, name: "ドーミーイン京都四条烏丸",   lat: 35.0037, lng: 135.7590 },
-  { no: 143240, name: "ドーミーイン心斎橋",         lat: 34.6724, lng: 135.5013 },
-  { no: 11381,  name: "ドーミーイン梅田東",         lat: 34.7044, lng: 135.5120 },
-  { no: 129607, name: "ドーミーイン博多祇園",       lat: 33.5878, lng: 130.4120 },
-  { no: 104702, name: "御宿野乃 浅草",             lat: 35.7148, lng: 139.7967 },
-  { no: 104703, name: "御宿野乃 道後",             lat: 33.8517, lng: 132.7875 },
-  { no: 137044, name: "ドーミーイン金沢",           lat: 36.5785, lng: 136.6457 },
-  { no: 176643, name: "ドーミーイン那覇",           lat: 26.2172, lng: 127.6793 },
-  { no: 153267, name: "ドーミーイン広島",           lat: 34.3966, lng: 132.4596 },
-  { no: 182423, name: "ドーミーイン札幌ANNEX",      lat: 43.0612, lng: 141.3512 },
-  { no: 184016, name: "ドーミーイン神戸",           lat: 34.6937, lng: 135.1956 },
-  { no: 183414, name: "ドーミーイン大阪北浜",       lat: 34.6891, lng: 135.5148 },
-  { no: 158346, name: "ドーミーイン福岡天神",       lat: 33.5905, lng: 130.3989 },
-  { no: 164657, name: "ドーミーイン奈良",           lat: 34.6819, lng: 135.8294 },
-  { no: 151144, name: "ドーミーイン熊本",           lat: 32.8031, lng: 130.7079 },
+// ── ホテルデータ ──────────────────────────────────────────
+const HOTELS = [
+  {id:"d01",brand:"dormy",name:"ドーミーイン旭川",           pref:"北海道",city:"旭川市",  lat:43.770,lng:142.364,hotelNo:104566,price:6500, access:"旭川駅 徒歩15分"},
+  {id:"d02",brand:"dormy",name:"ドーミーインPREMIUM札幌",    pref:"北海道",city:"札幌市",  lat:43.059,lng:141.349,hotelNo:14019, price:8500, access:"大通駅 徒歩3分"},
+  {id:"d03",brand:"dormy",name:"ドーミーインPREMIUM釧路",    pref:"北海道",city:"釧路市",  lat:42.984,lng:144.380,hotelNo:56534, price:7000, access:"釧路駅 徒歩9分"},
+  {id:"d04",brand:"dormy",name:"ドーミーイン弘前",           pref:"青森県",city:"弘前市",  lat:40.602,lng:140.464,hotelNo:77940, price:6500, access:"中央弘前駅 徒歩6分"},
+  {id:"d05",brand:"dormy",name:"こまちの湯 ドーミーイン秋田",pref:"秋田県",city:"秋田市",  lat:39.718,lng:140.102,hotelNo:50775, price:7000, access:"秋田駅 徒歩10分"},
+  {id:"d06",brand:"dormy",name:"ドーミーイン仙台",           pref:"宮城県",city:"仙台市",  lat:38.267,lng:140.872,hotelNo:12695, price:8000, access:"仙台駅 徒歩5分"},
+  {id:"d07",brand:"dormy",name:"ドーミーイン前橋",           pref:"群馬県",city:"前橋市",  lat:36.391,lng:139.061,hotelNo:172226,price:6500, access:"前橋駅 徒歩10分"},
+  {id:"d08",brand:"dormy",name:"ドーミーイン秋葉原",         pref:"東京都",city:"千代田区", lat:35.700,lng:139.774,hotelNo:39980, price:10000,access:"秋葉原駅 徒歩3分"},
+  {id:"d09",brand:"dormy",name:"ドーミーイン渋谷神宮前",     pref:"東京都",city:"渋谷区",  lat:35.665,lng:139.703,hotelNo:69382, price:11000,access:"表参道駅 徒歩7分"},
+  {id:"d10",brand:"dormy",name:"ドーミーインPREMIUM名古屋栄",pref:"愛知県",city:"名古屋市", lat:35.168,lng:136.910,hotelNo:76876, price:10000,access:"伏見駅 徒歩3分"},
+  {id:"d11",brand:"dormy",name:"ドーミーインPREMIUM京都駅前",pref:"京都府",city:"京都市",  lat:34.985,lng:135.757,hotelNo:51690, price:11000,access:"京都駅 徒歩3分"},
+  {id:"d12",brand:"dormy",name:"ドーミーイン大阪北浜",       pref:"大阪府",city:"大阪市",  lat:34.692,lng:135.511,hotelNo:168253,price:9000, access:"北浜駅 徒歩2分"},
+  {id:"d13",brand:"dormy",name:"ドーミーインPREMIUMなんば",  pref:"大阪府",city:"大阪市",  lat:34.666,lng:135.501,hotelNo:143240,price:10500,access:"日本橋駅 徒歩5分"},
+  {id:"d14",brand:"dormy",name:"ドーミーイン神戸",           pref:"兵庫県",city:"神戸市",  lat:34.691,lng:135.195,hotelNo:93063, price:8500, access:"三宮駅 徒歩8分"},
+  {id:"d15",brand:"dormy",name:"ドーミーイン姫路",           pref:"兵庫県",city:"姫路市",  lat:34.826,lng:134.693,hotelNo:129607,price:7000, access:"姫路駅 徒歩3分"},
+  {id:"d16",brand:"dormy",name:"ドーミーイン岡山",           pref:"岡山県",city:"岡山市",  lat:34.655,lng:133.916,hotelNo:69381, price:7000, access:"西川緑道公園駅 徒歩3分"},
+  {id:"d17",brand:"dormy",name:"ドーミーイン広島",           pref:"広島県",city:"広島市",  lat:34.395,lng:132.461,hotelNo:11381, price:7500, access:"紙屋町 徒歩5分"},
+  {id:"d18",brand:"dormy",name:"ドーミーインPREMIUM下関",    pref:"山口県",city:"下関市",  lat:33.955,lng:130.941,hotelNo:104702,price:8000, access:"下関駅 徒歩8分"},
+  {id:"d19",brand:"dormy",name:"ドーミーインPREMIUM博多",    pref:"福岡県",city:"福岡市",  lat:33.591,lng:130.414,hotelNo:104703,price:9500, access:"博多駅 徒歩7分"},
+  {id:"d20",brand:"dormy",name:"ドーミーイン宮崎",           pref:"宮崎県",city:"宮崎市",  lat:31.909,lng:131.424,hotelNo:137044,price:6500, access:"宮崎駅 徒歩15分"},
+  {id:"d21",brand:"dormy",name:"ドーミーインPREMIUM福井",    pref:"福井県",city:"福井市",  lat:36.064,lng:136.223,hotelNo:143241,price:8000, access:"福井駅 徒歩7分"},
+  {id:"d22",brand:"dormy",name:"ドーミーインPREMIUM和歌山",  pref:"和歌山県",city:"和歌山市",lat:34.226,lng:135.168,hotelNo:120631,price:7500, access:"和歌山駅 徒歩5分"},
+  {id:"d23",brand:"dormy",name:"ドーミーインEXPRESS豊橋",   pref:"愛知県",city:"豊橋市",  lat:34.769,lng:137.392,hotelNo:91848, price:5500, access:"札木駅 徒歩1分"},
+  {id:"d24",brand:"dormy",name:"ドーミーインEXPRESS掛川",   pref:"静岡県",city:"掛川市",  lat:34.769,lng:137.999,hotelNo:91849, price:5000, access:"掛川駅 徒歩9分"},
+  {id:"n01",brand:"nono", name:"御宿 野乃 浅草",            pref:"東京都",city:"台東区",  lat:35.712,lng:139.796,hotelNo:176643,price:14000,access:"浅草駅 徒歩3分"},
+  {id:"n02",brand:"nono", name:"御宿 野乃 浅草別邸",        pref:"東京都",city:"台東区",  lat:35.7130,lng:139.797,hotelNo:196500,price:16000,access:"浅草駅 徒歩8分"},
+  {id:"n03",brand:"nono", name:"御宿 野乃 仙台",            pref:"宮城県",city:"仙台市",  lat:38.268,lng:140.871,hotelNo:152300,price:11000,access:"広瀬通駅 徒歩1分"},
+  {id:"n04",brand:"nono", name:"御宿 野乃 富山",            pref:"富山県",city:"富山市",  lat:36.695,lng:137.213,hotelNo:153267,price:10000,access:"富山駅 徒歩3分"},
+  {id:"n05",brand:"nono", name:"御宿 野乃 金沢",            pref:"石川県",city:"金沢市",  lat:36.578,lng:136.649,hotelNo:182423,price:11000,access:"金沢駅 徒歩1分"},
+  {id:"n06",brand:"nono", name:"御宿 野乃 松本",            pref:"長野県",city:"松本市",  lat:36.235,lng:137.972,hotelNo:190100,price:10000,access:"松本駅 徒歩5分"},
+  {id:"n07",brand:"nono", name:"御宿 野乃 京都七条",        pref:"京都府",city:"京都市",  lat:34.982,lng:135.761,hotelNo:168500,price:13000,access:"京都駅 徒歩5分"},
+  {id:"n08",brand:"nono", name:"御宿 野乃 大阪淀屋橋",      pref:"大阪府",city:"大阪市",  lat:34.6938,lng:135.501,hotelNo:183414,price:12000,access:"淀屋橋駅 徒歩3分"},
+  {id:"n09",brand:"nono", name:"御宿 野乃 なんば",          pref:"大阪府",city:"大阪市",  lat:34.6666,lng:135.505,hotelNo:158346,price:12500,access:"日本橋駅 徒歩3分"},
+  {id:"n10",brand:"nono", name:"御宿 野乃 奈良",            pref:"奈良県",city:"奈良市",  lat:34.687,lng:135.833,hotelNo:164657,price:12000,access:"奈良駅 徒歩1分"},
+  {id:"n11",brand:"nono", name:"御宿 野乃 松江",            pref:"島根県",city:"松江市",  lat:35.472,lng:133.049,hotelNo:184016,price:9500, access:"松江駅 徒歩3分"},
+  {id:"n12",brand:"nono", name:"御宿 野乃 境港",            pref:"鳥取県",city:"境港市",  lat:35.539,lng:133.234,hotelNo:151144,price:9000, access:"境港駅 徒歩3分"},
+  {id:"n13",brand:"nono", name:"御宿 野乃 別府",            pref:"大分県",city:"別府市",  lat:33.283,lng:131.495,hotelNo:166200,price:11500,access:"別府駅 徒歩1分"},
+  {id:"n14",brand:"nono", name:"御宿 野乃 熊本",            pref:"熊本県",city:"熊本市",  lat:32.804,lng:130.706,hotelNo:170300,price:11000,access:"辛島駅 徒歩6分"},
 ];
 
-// 地図初期化
-const map = L.map('map').setView([36.5, 137.5], 6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
-}).addTo(map);
+// ── 状態 ────────────────────────────────────────────────
+let filterMode="all", sortKey="name", searchQ="", selectedId=null;
+const markers={};
+let livePrice={};
 
-const markers = {};
+const today = () => new Date().toISOString().slice(0,10);
+const isDark = () => document.documentElement.getAttribute("data-theme")==="dark";
 
-// localhost保存・復元
-window.addEventListener('load', () => {
-  const savedAppId = localStorage.getItem('rk_appId');
-  const savedAccessKey = localStorage.getItem('rk_accessKey');
-  if (savedAppId) document.getElementById('appId').value = savedAppId;
-  if (savedAccessKey) document.getElementById('accessKey').value = savedAccessKey;
+function priceColor(p,live){ if(live)return"var(--primary)"; if(!p)return"#888"; if(p<=6000)return"#22863a"; if(p<=9000)return"#2d8fbf"; if(p<=12000)return"#b07d00"; return"#b5522a"; }
+function priceClass(p,live){ if(live)return"pc-live"; if(!p)return""; if(p<=6000)return"pc-lo"; if(p<=12000)return"pc-mi"; return"pc-hi"; }
+function fmtPrice(p){ return p?"¥"+p.toLocaleString():"未設定"; }
+function getDP(h){ const lp=livePrice[h.hotelNo]; if(lp)return{price:lp.price,live:true,updated:lp.updated,checkin:lp.checkin}; return{price:h.price,live:false,updated:null}; }
 
-  // デフォルト日付（明日・明後日）
-  const today = new Date();
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-  const dayAfter = new Date(today); dayAfter.setDate(today.getDate() + 2);
-  document.getElementById('checkin').value = tomorrow.toISOString().slice(0, 10);
-  document.getElementById('checkout').value = dayAfter.toISOString().slice(0, 10);
+// ── 地図 ────────────────────────────────────────────────
+const TILE_L="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const TILE_D="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const ATTR='&copy;<a href="https://www.openstreetmap.org/copyright">OSM</a>&copy;<a href="https://carto.com/">CARTO</a>';
+const map=L.map("map",{center:[36.5,137],zoom:5,zoomControl:false});
+L.control.zoom({position:"bottomleft"}).addTo(map);
+let tile=L.tileLayer(isDark()?TILE_D:TILE_L,{attribution:ATTR,maxZoom:19}).addTo(map);
+function refreshTile(){ map.removeLayer(tile); tile=L.tileLayer(isDark()?TILE_D:TILE_L,{attribution:ATTR,maxZoom:19}).addTo(map); }
 
-  // マーカー初期配置
-  hotels.forEach(h => {
-    const icon = L.divIcon({
-      className: '',
-      html: `<div class="price-tag no-vacancy">${h.name}</div>`,
-      iconAnchor: [0, 0]
-    });
-    markers[h.no] = L.marker([h.lat, h.lng], { icon }).addTo(map);
-    markers[h.no].bindPopup(`<b>${h.name}</b><br>価格未取得`);
+function makeIcon(h){
+  const {price,live}=getDP(h);
+  const col=priceColor(price,live);
+  const label=price?"¥"+price.toLocaleString():"未取得";
+  const html='<div class="mpinwrap"><div class="mbub" style="background:'+col+'">'+label+'</div>'
+    +'<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid '+col+'"></div></div>';
+  return L.divIcon({html,className:"",iconSize:[72,38],iconAnchor:[36,38]});
+}
+function makePopup(h){
+  const {price,live,updated,checkin}=getDP(h);
+  const bLabel=h.brand==="dormy"?"ドーミーイン":"御宿 野乃";
+  const bCol=h.brand==="dormy"?"var(--dormy)":"var(--nono)";
+  const url="https://travel.rakuten.co.jp/HOTEL/"+h.hotelNo+"/";
+  const updStr=updated?"✅ 楽天取得 "+updated+(checkin?" / "+checkin+" チェックイン":""):"📌 参考価格";
+  return '<div class="popi">'
+    +'<div class="pop-brand" style="color:'+bCol+'">'+bLabel+'</div>'
+    +'<div class="pop-name">'+h.name+'</div>'
+    +'<div class="pop-price" style="color:'+priceColor(price,live)+'">'+fmtPrice(price)+'<span> / 1泊・1室</span></div>'
+    +'<div class="pop-updated">'+updStr+'</div>'
+    +'<div class="pop-meta">📍 '+h.pref+' '+h.city+'</div>'
+    +'<div class="pop-meta">🚉 '+h.access+'</div>'
+    +'<hr class="pop-hr">'
+    +'<a class="pop-link" href="'+url+'" target="_blank" rel="noopener noreferrer">楽天トラベルで見る →</a>'
+    +'<div class="pop-note">※楽天トラベルAPIの最安値（1泊1室・大人1名）。実際と異なる場合があります。</div>'
+    +'</div>';
+}
+function addMarkers(){
+  HOTELS.forEach(function(h){
+    const m=L.marker([h.lat,h.lng],{icon:makeIcon(h)}).bindPopup(makePopup(h),{maxWidth:290}).addTo(map);
+    m.on("click",function(){selectHotel(h.id);});
+    markers[h.id]=m;
   });
-});
+}
+function refreshAllMarkers(){
+  HOTELS.forEach(function(h){ if(markers[h.id]){markers[h.id].setIcon(makeIcon(h));markers[h.id].setPopupContent(makePopup(h));} });
+}
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// ── API取得（Netlify Functionsプロキシ経由） ───────────────
+async function fetchPrices(){
+  const appId    =document.getElementById("apikey-input").value.trim();
+  const accessKey=document.getElementById("accesskey-input").value.trim();
+  const datePick =document.getElementById("date-pick").value;
+  if(!appId||!accessKey){setStatus("⚠️ アプリIDとアクセスキーを両方入力してください","#b5522a");return;}
+  if(!datePick){setStatus("⚠️ チェックイン日を選択してください","#b5522a");return;}
 
-async function fetchPrices() {
-  const appId = document.getElementById('appId').value.trim();
-  const accessKey = document.getElementById('accessKey').value.trim();
-  const checkin = document.getElementById('checkin').value;
-  const checkout = document.getElementById('checkout').value;
-  const status = document.getElementById('status');
-  const btn = document.getElementById('fetchBtn');
+  const cin=new Date(datePick);
+  const cout=new Date(cin); cout.setDate(cout.getDate()+1);
+  const checkin =datePick;
+  const checkout=cout.toISOString().slice(0,10);
 
-  if (!appId || !accessKey) { alert('アプリIDとアクセスキーを入力してください'); return; }
-  if (!checkin || !checkout) { alert('日付を入力してください'); return; }
-
-  // localStorage保存
-  localStorage.setItem('rk_appId', appId);
-  localStorage.setItem('rk_accessKey', accessKey);
-
-  btn.disabled = true;
-  status.textContent = '取得中...';
-
-  let successCount = 0;
-  let errorCount = 0;
-
-  for (let i = 0; i < hotels.length; i++) {
-    const h = hotels[i];
-    status.textContent = `取得中... (${i + 1}/${hotels.length}) ${h.name}`;
-
-    const params = new URLSearchParams({
-      applicationId: appId,
-      accessKey: accessKey,
-      checkinDate: checkin,
-      checkoutDate: checkout,
-      adultNum: 1,
-      roomNum: 1,
-      hotelNo: h.no,
-      datumType: 1,
-      formatVersion: 2,
-    });
-
-    try {
-      const res = await fetch(`/.netlify/functions/rakuten-proxy?${params.toString()}`);
-      const data = await res.json();
-
-      console.log(`hotelNo=${h.no} response:`, data);
-
-      if (data.errors) {
-        // APIエラー（Data not found等）はスキップ
-        updateMarker(h, null, 'エラー: ' + (data.errors.errorMessage || '不明'));
-        errorCount++;
-      } else if (data.pagingInfo && data.pagingInfo.recordCount === 0) {
-        updateMarker(h, null, '空室なし');
-      } else if (data.hotels && data.hotels.length > 0) {
-        const hotelArr = data.hotels[0];
-        let price = null;
-
-        // formatVersion=2: hotels[0][1].roomInfo[1].dailyCharge.total
-        if (hotelArr[1] && hotelArr[1].roomInfo) {
-          const roomInfo = hotelArr[1].roomInfo;
-          if (roomInfo[1] && roomInfo[1].dailyCharge) {
-            price = roomInfo[1].dailyCharge.total;
-          } else if (roomInfo[0] && roomInfo[0].dailyCharge) {
-            price = roomInfo[0].dailyCharge.total;
-          }
-        }
-
-        // フォールバック: hotelMinCharge
-        if (!price && hotelArr[0] && hotelArr[0].hotelBasicInfo) {
-          price = hotelArr[0].hotelBasicInfo.hotelMinCharge;
-        }
-
-        updateMarker(h, price, price ? `¥${price.toLocaleString()}` : '価格取得失敗');
-        if (price) successCount++;
-      } else {
-        updateMarker(h, null, '空室なし');
+  // キャッシュ確認
+  const cacheKey="rk_"+checkin+"_"+appId.slice(-8);
+  try{
+    const cached=localStorage.getItem(cacheKey);
+    if(cached){
+      const obj=JSON.parse(cached);
+      if(obj.fetchedOn===today()){
+        livePrice=obj.data;
+        setStatus("✅ キャッシュ済み（"+checkin+"、本日取得済み）","var(--primary)");
+        refreshAllMarkers(); renderList(); return;
       }
-    } catch (e) {
-      console.error(`hotelNo=${h.no} error:`, e);
-      updateMarker(h, null, '通信エラー');
-      errorCount++;
     }
+  }catch(e){}
 
-    await sleep(1000);
+  const btn=document.getElementById("fetch-btn");
+  btn.disabled=true;
+  setStatus("🔄 取得中…","var(--muted)");
+
+  const allNos=[];
+  HOTELS.forEach(function(h){ if(allNos.indexOf(h.hotelNo)===-1)allNos.push(h.hotelNo); });
+
+  let fetched=0;
+  for(let i=0;i<allNos.length;i++){
+    const no=allNos[i];
+    // Netlify Functions プロキシ経由でfetch（CORSを回避）
+    const params=new URLSearchParams({
+      applicationId: appId,
+      accessKey:     accessKey,
+      checkinDate:   checkin,
+      checkoutDate:  checkout,
+      adultNum:      "1",
+      roomNum:       "1",
+      hotelNo:       String(no),
+      datumType:     "1",
+      formatVersion: "2"
+    });
+    const proxyUrl="/.netlify/functions/rakuten-proxy?"+params.toString();
+
+    try{
+      const resp=await fetch(proxyUrl);
+      const data=await resp.json();
+      console.log("hotelNo="+no+" status="+resp.status+" body="+JSON.stringify(data).slice(0,200));
+
+      if(data.error||data.errors){
+        const msg=data.errors?data.errors.errorMessage:(data.error_description||data.error);
+        const code=data.errors?data.errors.errorCode:"";
+        setStatus("❌ APIエラー "+code+": "+msg,"#b5522a");
+        btn.disabled=false; return;
+      }
+
+      const hotels=data.hotels||[];
+      hotels.forEach(function(item){
+        const hi =Array.isArray(item)?item[0]:item;
+        const hb =(hi&&hi.hotelBasicInfo)?hi.hotelBasicInfo:{};
+        const rno=hb.hotelNo;
+        const minCharge=hb.hotelMinCharge;
+        if(rno&&minCharge){
+          livePrice[rno]={price:minCharge,updated:new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}),checkin};
+          fetched++;
+        }
+      });
+      setStatus("🔄 取得中… "+fetched+"件完了 ("+(i+1)+"/"+allNos.length+")","var(--muted)");
+    }catch(e){
+      console.warn("hotelNo="+no+" error:",e.message);
+    }
+    // 429対策: 400ms待機
+    await new Promise(function(r){setTimeout(r,400);});
   }
 
-  status.textContent = `完了 ✅ 取得成功: ${successCount}件 / スキップ: ${errorCount}件`;
-  btn.disabled = false;
+  // キャッシュ保存
+  try{ localStorage.setItem(cacheKey,JSON.stringify({fetchedOn:today(),data:livePrice})); }catch(e){}
+
+  btn.disabled=false;
+  if(fetched>0){
+    setStatus("✅ "+fetched+"件の価格を取得しました（"+checkin+"）","var(--primary)");
+  }else{
+    setStatus("⚠️ 価格を取得できませんでした（空室なし or APIエラー）","#b5522a");
+  }
+  refreshAllMarkers(); renderList();
 }
 
-function updateMarker(hotel, price, label) {
-  const hasPrice = price !== null;
-  const icon = L.divIcon({
-    className: '',
-    html: `<div class="price-tag ${hasPrice ? '' : 'no-vacancy'}">${hasPrice ? '¥' + price.toLocaleString() : hotel.name}</div>`,
-    iconAnchor: [0, 0]
-  });
-  markers[hotel.no].setIcon(icon);
-  markers[hotel.no].bindPopup(`<b>${hotel.name}</b><br>${label}`);
+function setStatus(msg,color){ const el=document.getElementById("fetch-status"); el.textContent=msg; el.style.color=color; }
+
+// ── リスト ───────────────────────────────────────────────
+function filtered(){
+  return HOTELS
+    .filter(function(h){ if(filterMode==="dormy")return h.brand==="dormy"; if(filterMode==="nono")return h.brand==="nono"; return true; })
+    .filter(function(h){ if(!searchQ)return true; const q=searchQ.toLowerCase(); return h.name.toLowerCase().includes(q)||h.pref.includes(q)||h.city.includes(q); })
+    .sort(function(a,b){
+      const pa=getDP(a).price||999999, pb=getDP(b).price||999999;
+      if(sortKey==="price-asc")return pa-pb;
+      if(sortKey==="price-desc")return pb-pa;
+      if(sortKey==="pref")return a.pref.localeCompare(b.pref,"ja");
+      return a.name.localeCompare(b.name,"ja");
+    });
 }
+function renderList(){
+  const list=filtered();
+  document.getElementById("hotel-list").innerHTML=list.map(function(h){
+    const dp=getDP(h);
+    const chip=dp.live?"¥"+dp.price.toLocaleString()+" 🔴":fmtPrice(dp.price);
+    return '<div class="hcard'+(selectedId===h.id?" sel":"")+'" onclick="selectHotel(\''+h.id+'\')" data-id="'+h.id+'">'
+      +'<div class="hcard-top"><div class="hname">'+h.name+'</div>'
+      +'<span class="bbadge '+(h.brand==="dormy"?"bd":"bn")+'">'+(h.brand==="dormy"?"DI":"野乃")+'</span></div>'
+      +'<div class="hmeta"><span>'+h.pref+'</span>'
+      +'<span class="pchip '+priceClass(dp.price,dp.live)+'">'+chip+'</span>'
+      +'</div></div>';
+  }).join("");
+  document.getElementById("count-bar").textContent=list.length+" 件表示 / 全 "+HOTELS.length+" 件";
+  document.getElementById("total-cnt").textContent="("+HOTELS.length+"件)";
+  HOTELS.forEach(function(h){
+    const inList=list.some(function(l){return l.id===h.id;});
+    if(markers[h.id]){ if(inList)map.addLayer(markers[h.id]); else map.removeLayer(markers[h.id]); }
+  });
+}
+function selectHotel(id){
+  selectedId=id;
+  const h=HOTELS.find(function(x){return x.id===id;});
+  if(!h)return;
+  map.setView([h.lat,h.lng],14,{animate:true});
+  if(markers[id])markers[id].openPopup();
+  renderList();
+  const card=document.querySelector('.hcard[data-id="'+id+'"]');
+  if(card)card.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+// ── テーマ ───────────────────────────────────────────────
+(function(){
+  const btn=document.getElementById("theme-btn");
+  let d=document.documentElement.getAttribute("data-theme")||"dark";
+  function setTheme(t){
+    d=t; document.documentElement.setAttribute("data-theme",t); refreshTile();
+    btn.innerHTML=t==="dark"
+      ?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+      :'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  }
+  setTheme(d);
+  btn.addEventListener("click",function(){setTheme(d==="dark"?"light":"dark");});
+})();
+
+document.getElementById("date-pick").value=today();
+document.getElementById("fetch-btn").addEventListener("click",fetchPrices);
+document.getElementById("search").addEventListener("input",function(e){searchQ=e.target.value;renderList();});
+document.querySelectorAll(".fbtn").forEach(function(b){
+  b.addEventListener("click",function(){
+    filterMode=b.dataset.f;
+    document.querySelectorAll(".fbtn").forEach(function(x){x.className="fbtn";});
+    b.classList.add(filterMode==="dormy"?"fd":filterMode==="nono"?"fn":"fa");
+    renderList();
+  });
+});
+document.getElementById("sort-sel").addEventListener("change",function(e){sortKey=e.target.value;renderList();});
+
+addMarkers(); renderList();
 </script>
 </body>
 </html>
