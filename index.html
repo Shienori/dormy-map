@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ドーミーイン・野乃 全国価格マップ 20260407-1450</title>
-//unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-//fonts.googleapis.com">
-//fonts.gstatic.com" crossorigin>
-//fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<title>ドーミーイン・野乃 全国価格マップ 20260407-1325</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root,[data-theme="light"]{
   --bg:#f7f6f2;--surface:#f9f8f5;--surface2:#fbfbf9;--offset:#f3f0ec;
@@ -118,18 +118,338 @@ input,select{font:inherit;color:inherit}
 <body>
 <header id="hdr">
   <div id="logo">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    ドーミーイン・野乃 価格マップ &nbsp;<span style="font-size:.7rem;color:var(--muted);font-weight:400">20260407-1450</span>
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-label="logo">
+      <rect x="1" y="1" width="24" height="24" rx="6" fill="var(--primary)" opacity=".15"/>
+      <path d="M13 4 Q19 4 19 10 L19 22 M13 4 Q7 4 7 10 L7 22" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      <circle cx="13" cy="14" r="2.5" fill="var(--primary)"/>
+    </svg>
+    <span>ドーミーイン・野乃 価格マップ <span style="font-size:.625rem;opacity:.5;font-weight:400">20260407-1325</span></span>
   </div>
   <div class="legend-pills">
-    <span class="pill pill-dormy"><span class="dot" style="background:var(--dormy)"></span>ドーミーイン</span>
-    <span class="pill pill-nono"><span class="dot" style="background:var(--nono)"></span>御宿 野乃</span>
+    <div class="pill pill-dormy"><span class="dot" style="background:var(--dormy)"></span>ドーミーイン</div>
+    <div class="pill pill-nono"><span class="dot" style="background:var(--nono)"></span>御宿 野乃</div>
   </div>
-  <button id="theme-btn" title="テーマ切替"></button>
+  <button id="theme-btn" aria-label="テーマ切替">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
 </header>
 
 <div id="ctrl-bar">
-  abel>📅 チェックイン日
-    <input type="date" id="date-pick" class="ctrl-input">
-  </label>
-  abel>
+  <label for="date-pick">📅 チェックイン日</label>
+  <input type="date" id="date-pick" class="ctrl-input">
+  <label for="apikey-input">🔑 アプリID</label>
+  <input type="text" id="apikey-input" class="ctrl-input" placeholder="UUID形式" autocomplete="off" spellcheck="false">
+  <label for="accesskey-input">🔐 アクセスキー</label>
+  <input type="password" id="accesskey-input" class="ctrl-input" placeholder="pk_..." autocomplete="off" spellcheck="false">
+  <button id="fetch-btn">価格を取得</button>
+  <span id="fetch-status">アプリID・アクセスキーを入力して取得してください</span>
+</div>
+
+<div id="app">
+  <div id="map"></div>
+  <div id="price-legend">
+    <h4>価格帯（1泊・1室）</h4>
+    <div class="lr"><div class="lsw" style="background:#22863a"></div>〜6,000円</div>
+    <div class="lr"><div class="lsw" style="background:#2d8fbf"></div>〜9,000円</div>
+    <div class="lr"><div class="lsw" style="background:#b07d00"></div>〜12,000円</div>
+    <div class="lr"><div class="lsw" style="background:#b5522a"></div>12,000円超</div>
+    <div class="lr"><div class="lsw" style="background:#888"></div>参考値/未取得</div>
+  </div>
+  <aside id="sidebar">
+    <div id="sb-head">
+      <h2>ホテル一覧 <span id="total-cnt" style="font-weight:400;color:var(--muted)"></span></h2>
+      <input id="search" type="search" placeholder="ホテル名・都市で検索…">
+      <div class="filter-row">
+        <button class="fbtn fa" data-f="all">すべて</button>
+        <button class="fbtn" data-f="dormy">ドーミーイン</button>
+        <button class="fbtn" data-f="nono">御宿 野乃</button>
+      </div>
+    </div>
+    <div id="sort-row">
+      <label for="sort-sel">並べ替え</label>
+      <select id="sort-sel">
+        <option value="name">名前順</option>
+        <option value="price-asc">価格 低い順</option>
+        <option value="price-desc">価格 高い順</option>
+        <option value="pref">都道府県順</option>
+      </select>
+    </div>
+    <div id="hotel-list"></div>
+    <div id="count-bar"></div>
+  </aside>
+</div>
+<button id="sb-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">一覧 ☰</button>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── ホテルデータ ──────────────────────────────────────────
+const HOTELS = [
+  {id:"d01",brand:"dormy",name:"ドーミーイン旭川",           pref:"北海道",city:"旭川市",  lat:43.770,lng:142.364,hotelNo:104566,price:6500, access:"旭川駅 徒歩15分"},
+  {id:"d02",brand:"dormy",name:"ドーミーインPREMIUM札幌",    pref:"北海道",city:"札幌市",  lat:43.059,lng:141.349,hotelNo:14019, price:8500, access:"大通駅 徒歩3分"},
+  {id:"d03",brand:"dormy",name:"ドーミーインPREMIUM釧路",    pref:"北海道",city:"釧路市",  lat:42.984,lng:144.380,hotelNo:56534, price:7000, access:"釧路駅 徒歩9分"},
+  {id:"d04",brand:"dormy",name:"ドーミーイン弘前",           pref:"青森県",city:"弘前市",  lat:40.602,lng:140.464,hotelNo:77940, price:6500, access:"中央弘前駅 徒歩6分"},
+  {id:"d05",brand:"dormy",name:"こまちの湯 ドーミーイン秋田",pref:"秋田県",city:"秋田市",  lat:39.718,lng:140.102,hotelNo:50775, price:7000, access:"秋田駅 徒歩10分"},
+  {id:"d06",brand:"dormy",name:"ドーミーイン仙台",           pref:"宮城県",city:"仙台市",  lat:38.267,lng:140.872,hotelNo:12695, price:8000, access:"仙台駅 徒歩5分"},
+  {id:"d07",brand:"dormy",name:"ドーミーイン前橋",           pref:"群馬県",city:"前橋市",  lat:36.391,lng:139.061,hotelNo:172226,price:6500, access:"前橋駅 徒歩10分"},
+  {id:"d08",brand:"dormy",name:"ドーミーイン秋葉原",         pref:"東京都",city:"千代田区", lat:35.700,lng:139.774,hotelNo:39980, price:10000,access:"秋葉原駅 徒歩3分"},
+  {id:"d09",brand:"dormy",name:"ドーミーイン渋谷神宮前",     pref:"東京都",city:"渋谷区",  lat:35.665,lng:139.703,hotelNo:69382, price:11000,access:"表参道駅 徒歩7分"},
+  {id:"d10",brand:"dormy",name:"ドーミーインPREMIUM名古屋栄",pref:"愛知県",city:"名古屋市", lat:35.168,lng:136.910,hotelNo:76876, price:10000,access:"伏見駅 徒歩3分"},
+  {id:"d11",brand:"dormy",name:"ドーミーインPREMIUM京都駅前",pref:"京都府",city:"京都市",  lat:34.985,lng:135.757,hotelNo:51690, price:11000,access:"京都駅 徒歩3分"},
+  {id:"d12",brand:"dormy",name:"ドーミーイン大阪北浜",       pref:"大阪府",city:"大阪市",  lat:34.692,lng:135.511,hotelNo:168253,price:9000, access:"北浜駅 徒歩2分"},
+  {id:"d13",brand:"dormy",name:"ドーミーインPREMIUMなんば",  pref:"大阪府",city:"大阪市",  lat:34.666,lng:135.501,hotelNo:143240,price:10500,access:"日本橋駅 徒歩5分"},
+  {id:"d14",brand:"dormy",name:"ドーミーイン神戸",           pref:"兵庫県",city:"神戸市",  lat:34.691,lng:135.195,hotelNo:93063, price:8500, access:"三宮駅 徒歩8分"},
+  {id:"d15",brand:"dormy",name:"ドーミーイン姫路",           pref:"兵庫県",city:"姫路市",  lat:34.826,lng:134.693,hotelNo:129607,price:7000, access:"姫路駅 徒歩3分"},
+  {id:"d16",brand:"dormy",name:"ドーミーイン岡山",           pref:"岡山県",city:"岡山市",  lat:34.655,lng:133.916,hotelNo:69381, price:7000, access:"西川緑道公園駅 徒歩3分"},
+  {id:"d17",brand:"dormy",name:"ドーミーイン広島",           pref:"広島県",city:"広島市",  lat:34.395,lng:132.461,hotelNo:11381, price:7500, access:"紙屋町 徒歩5分"},
+  {id:"d18",brand:"dormy",name:"ドーミーインPREMIUM下関",    pref:"山口県",city:"下関市",  lat:33.955,lng:130.941,hotelNo:104702,price:8000, access:"下関駅 徒歩8分"},
+  {id:"d19",brand:"dormy",name:"ドーミーインPREMIUM博多",    pref:"福岡県",city:"福岡市",  lat:33.591,lng:130.414,hotelNo:104703,price:9500, access:"博多駅 徒歩7分"},
+  {id:"d20",brand:"dormy",name:"ドーミーイン宮崎",           pref:"宮崎県",city:"宮崎市",  lat:31.909,lng:131.424,hotelNo:137044,price:6500, access:"宮崎駅 徒歩15分"},
+  {id:"d21",brand:"dormy",name:"ドーミーインPREMIUM福井",    pref:"福井県",city:"福井市",  lat:36.064,lng:136.223,hotelNo:143241,price:8000, access:"福井駅 徒歩7分"},
+  {id:"d22",brand:"dormy",name:"ドーミーインPREMIUM和歌山",  pref:"和歌山県",city:"和歌山市",lat:34.226,lng:135.168,hotelNo:120631,price:7500, access:"和歌山駅 徒歩5分"},
+  {id:"d23",brand:"dormy",name:"ドーミーインEXPRESS豊橋",   pref:"愛知県",city:"豊橋市",  lat:34.769,lng:137.392,hotelNo:91848, price:5500, access:"札木駅 徒歩1分"},
+  {id:"d24",brand:"dormy",name:"ドーミーインEXPRESS掛川",   pref:"静岡県",city:"掛川市",  lat:34.769,lng:137.999,hotelNo:91849, price:5000, access:"掛川駅 徒歩9分"},
+  {id:"n01",brand:"nono", name:"御宿 野乃 浅草",            pref:"東京都",city:"台東区",  lat:35.712,lng:139.796,hotelNo:176643,price:14000,access:"浅草駅 徒歩3分"},
+  {id:"n02",brand:"nono", name:"御宿 野乃 浅草別邸",        pref:"東京都",city:"台東区",  lat:35.7130,lng:139.797,hotelNo:196500,price:16000,access:"浅草駅 徒歩8分"},
+  {id:"n03",brand:"nono", name:"御宿 野乃 仙台",            pref:"宮城県",city:"仙台市",  lat:38.268,lng:140.871,hotelNo:152300,price:11000,access:"広瀬通駅 徒歩1分"},
+  {id:"n04",brand:"nono", name:"御宿 野乃 富山",            pref:"富山県",city:"富山市",  lat:36.695,lng:137.213,hotelNo:153267,price:10000,access:"富山駅 徒歩3分"},
+  {id:"n05",brand:"nono", name:"御宿 野乃 金沢",            pref:"石川県",city:"金沢市",  lat:36.578,lng:136.649,hotelNo:182423,price:11000,access:"金沢駅 徒歩1分"},
+  {id:"n06",brand:"nono", name:"御宿 野乃 松本",            pref:"長野県",city:"松本市",  lat:36.235,lng:137.972,hotelNo:190100,price:10000,access:"松本駅 徒歩5分"},
+  {id:"n07",brand:"nono", name:"御宿 野乃 京都七条",        pref:"京都府",city:"京都市",  lat:34.982,lng:135.761,hotelNo:168500,price:13000,access:"京都駅 徒歩5分"},
+  {id:"n08",brand:"nono", name:"御宿 野乃 大阪淀屋橋",      pref:"大阪府",city:"大阪市",  lat:34.6938,lng:135.501,hotelNo:183414,price:12000,access:"淀屋橋駅 徒歩3分"},
+  {id:"n09",brand:"nono", name:"御宿 野乃 なんば",          pref:"大阪府",city:"大阪市",  lat:34.6666,lng:135.505,hotelNo:158346,price:12500,access:"日本橋駅 徒歩3分"},
+  {id:"n10",brand:"nono", name:"御宿 野乃 奈良",            pref:"奈良県",city:"奈良市",  lat:34.687,lng:135.833,hotelNo:164657,price:12000,access:"奈良駅 徒歩1分"},
+  {id:"n11",brand:"nono", name:"御宿 野乃 松江",            pref:"島根県",city:"松江市",  lat:35.472,lng:133.049,hotelNo:184016,price:9500, access:"松江駅 徒歩3分"},
+  {id:"n12",brand:"nono", name:"御宿 野乃 境港",            pref:"鳥取県",city:"境港市",  lat:35.539,lng:133.234,hotelNo:151144,price:9000, access:"境港駅 徒歩3分"},
+  {id:"n13",brand:"nono", name:"御宿 野乃 別府",            pref:"大分県",city:"別府市",  lat:33.283,lng:131.495,hotelNo:166200,price:11500,access:"別府駅 徒歩1分"},
+  {id:"n14",brand:"nono", name:"御宿 野乃 熊本",            pref:"熊本県",city:"熊本市",  lat:32.804,lng:130.706,hotelNo:170300,price:11000,access:"辛島駅 徒歩6分"},
+];
+
+// ── 状態 ────────────────────────────────────────────────
+let filterMode="all", sortKey="name", searchQ="", selectedId=null;
+const markers={};
+let livePrice={};
+
+const today = () => new Date().toISOString().slice(0,10);
+const isDark = () => document.documentElement.getAttribute("data-theme")==="dark";
+
+function priceColor(p,live){ if(live)return"var(--primary)"; if(!p)return"#888"; if(p<=6000)return"#22863a"; if(p<=9000)return"#2d8fbf"; if(p<=12000)return"#b07d00"; return"#b5522a"; }
+function priceClass(p,live){ if(live)return"pc-live"; if(!p)return""; if(p<=6000)return"pc-lo"; if(p<=12000)return"pc-mi"; return"pc-hi"; }
+function fmtPrice(p){ return p?"¥"+p.toLocaleString():"未設定"; }
+function getDP(h){ const lp=livePrice[h.hotelNo]; if(lp)return{price:lp.price,live:true,updated:lp.updated,checkin:lp.checkin}; return{price:h.price,live:false,updated:null}; }
+
+// ── 地図 ────────────────────────────────────────────────
+const TILE_L="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const TILE_D="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const ATTR='&copy;<a href="https://www.openstreetmap.org/copyright">OSM</a>&copy;<a href="https://carto.com/">CARTO</a>';
+const map=L.map("map",{center:[36.5,137],zoom:5,zoomControl:false});
+L.control.zoom({position:"bottomleft"}).addTo(map);
+let tile=L.tileLayer(isDark()?TILE_D:TILE_L,{attribution:ATTR,maxZoom:19}).addTo(map);
+function refreshTile(){ map.removeLayer(tile); tile=L.tileLayer(isDark()?TILE_D:TILE_L,{attribution:ATTR,maxZoom:19}).addTo(map); }
+
+function makeIcon(h){
+  const {price,live}=getDP(h);
+  const col=priceColor(price,live);
+  const label=price?"¥"+price.toLocaleString():"未取得";
+  const html='<div class="mpinwrap"><div class="mbub" style="background:'+col+'">'+label+'</div>'
+    +'<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid '+col+'"></div></div>';
+  return L.divIcon({html,className:"",iconSize:[72,38],iconAnchor:[36,38]});
+}
+function makePopup(h){
+  const {price,live,updated,checkin}=getDP(h);
+  const bLabel=h.brand==="dormy"?"ドーミーイン":"御宿 野乃";
+  const bCol=h.brand==="dormy"?"var(--dormy)":"var(--nono)";
+  const url="https://travel.rakuten.co.jp/HOTEL/"+h.hotelNo+"/";
+  const updStr=updated?"✅ 楽天取得 "+updated+(checkin?" / "+checkin+" チェックイン":""):"📌 参考価格";
+  return '<div class="popi">'
+    +'<div class="pop-brand" style="color:'+bCol+'">'+bLabel+'</div>'
+    +'<div class="pop-name">'+h.name+'</div>'
+    +'<div class="pop-price" style="color:'+priceColor(price,live)+'">'+fmtPrice(price)+'<span> / 1泊・1室</span></div>'
+    +'<div class="pop-updated">'+updStr+'</div>'
+    +'<div class="pop-meta">📍 '+h.pref+' '+h.city+'</div>'
+    +'<div class="pop-meta">🚉 '+h.access+'</div>'
+    +'<hr class="pop-hr">'
+    +'<a class="pop-link" href="'+url+'" target="_blank" rel="noopener noreferrer">楽天トラベルで見る →</a>'
+    +'<div class="pop-note">※楽天トラベルAPIの最安値（1泊1室・大人1名）。実際と異なる場合があります。</div>'
+    +'</div>';
+}
+function addMarkers(){
+  HOTELS.forEach(function(h){
+    const m=L.marker([h.lat,h.lng],{icon:makeIcon(h)}).bindPopup(makePopup(h),{maxWidth:290}).addTo(map);
+    m.on("click",function(){selectHotel(h.id);});
+    markers[h.id]=m;
+  });
+}
+function refreshAllMarkers(){
+  HOTELS.forEach(function(h){ if(markers[h.id]){markers[h.id].setIcon(makeIcon(h));markers[h.id].setPopupContent(makePopup(h));} });
+}
+
+// ── API取得（Netlify Functionsプロキシ経由） ───────────────
+async function fetchPrices(){
+  const appId    =document.getElementById("apikey-input").value.trim();
+  const accessKey=document.getElementById("accesskey-input").value.trim();
+  const datePick =document.getElementById("date-pick").value;
+  if(!appId||!accessKey){setStatus("⚠️ アプリIDとアクセスキーを両方入力してください","#b5522a");return;}
+  if(!datePick){setStatus("⚠️ チェックイン日を選択してください","#b5522a");return;}
+
+  const cin=new Date(datePick);
+  const cout=new Date(cin); cout.setDate(cout.getDate()+1);
+  const checkin =datePick;
+  const checkout=cout.toISOString().slice(0,10);
+
+  // キャッシュ確認
+  const cacheKey="rk_"+checkin+"_"+appId.slice(-8);
+  try{
+    const cached=localStorage.getItem(cacheKey);
+    if(cached){
+      const obj=JSON.parse(cached);
+      if(obj.fetchedOn===today()){
+        livePrice=obj.data;
+        setStatus("✅ キャッシュ済み（"+checkin+"、本日取得済み）","var(--primary)");
+        refreshAllMarkers(); renderList(); return;
+      }
+    }
+  }catch(e){}
+
+  const btn=document.getElementById("fetch-btn");
+  btn.disabled=true;
+  setStatus("🔄 取得中…","var(--muted)");
+
+  const allNos=[];
+  HOTELS.forEach(function(h){ if(allNos.indexOf(h.hotelNo)===-1)allNos.push(h.hotelNo); });
+
+  let fetched=0;
+  for(let i=0;i<allNos.length;i++){
+    const no=allNos[i];
+    // Netlify Functions プロキシ経由でfetch（CORSを回避）
+    const params=new URLSearchParams({
+      applicationId: appId,
+      accessKey:     accessKey,
+      checkinDate:   checkin,
+      checkoutDate:  checkout,
+      adultNum:      "1",
+      roomNum:       "1",
+      hotelNo:       String(no),
+      datumType:     "1",
+      formatVersion: "2"
+    });
+    const proxyUrl="/.netlify/functions/rakuten-proxy?"+params.toString();
+
+    try{
+      const resp=await fetch(proxyUrl);
+      const data=await resp.json();
+      console.log("hotelNo="+no+" status="+resp.status+" body="+JSON.stringify(data).slice(0,200));
+
+      if(data.error||data.errors){
+        const msg=data.errors?data.errors.errorMessage:(data.error_description||data.error);
+        const code=data.errors?data.errors.errorCode:"";
+        setStatus("❌ APIエラー "+code+": "+msg,"#b5522a");
+        btn.disabled=false; return;
+      }
+
+      const hotels=data.hotels||[];
+      hotels.forEach(function(item){
+        const hi =Array.isArray(item)?item[0]:item;
+        const hb =(hi&&hi.hotelBasicInfo)?hi.hotelBasicInfo:{};
+        const rno=hb.hotelNo;
+        const minCharge=hb.hotelMinCharge;
+        if(rno&&minCharge){
+          livePrice[rno]={price:minCharge,updated:new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}),checkin};
+          fetched++;
+        }
+      });
+      setStatus("🔄 取得中… "+fetched+"件完了 ("+(i+1)+"/"+allNos.length+")","var(--muted)");
+    }catch(e){
+      console.warn("hotelNo="+no+" error:",e.message);
+    }
+    // 429対策: 400ms待機
+    await new Promise(function(r){setTimeout(r,400);});
+  }
+
+  // キャッシュ保存
+  try{ localStorage.setItem(cacheKey,JSON.stringify({fetchedOn:today(),data:livePrice})); }catch(e){}
+
+  btn.disabled=false;
+  if(fetched>0){
+    setStatus("✅ "+fetched+"件の価格を取得しました（"+checkin+"）","var(--primary)");
+  }else{
+    setStatus("⚠️ 価格を取得できませんでした（空室なし or APIエラー）","#b5522a");
+  }
+  refreshAllMarkers(); renderList();
+}
+
+function setStatus(msg,color){ const el=document.getElementById("fetch-status"); el.textContent=msg; el.style.color=color; }
+
+// ── リスト ───────────────────────────────────────────────
+function filtered(){
+  return HOTELS
+    .filter(function(h){ if(filterMode==="dormy")return h.brand==="dormy"; if(filterMode==="nono")return h.brand==="nono"; return true; })
+    .filter(function(h){ if(!searchQ)return true; const q=searchQ.toLowerCase(); return h.name.toLowerCase().includes(q)||h.pref.includes(q)||h.city.includes(q); })
+    .sort(function(a,b){
+      const pa=getDP(a).price||999999, pb=getDP(b).price||999999;
+      if(sortKey==="price-asc")return pa-pb;
+      if(sortKey==="price-desc")return pb-pa;
+      if(sortKey==="pref")return a.pref.localeCompare(b.pref,"ja");
+      return a.name.localeCompare(b.name,"ja");
+    });
+}
+function renderList(){
+  const list=filtered();
+  document.getElementById("hotel-list").innerHTML=list.map(function(h){
+    const dp=getDP(h);
+    const chip=dp.live?"¥"+dp.price.toLocaleString()+" 🔴":fmtPrice(dp.price);
+    return '<div class="hcard'+(selectedId===h.id?" sel":"")+'" onclick="selectHotel(\''+h.id+'\')" data-id="'+h.id+'">'
+      +'<div class="hcard-top"><div class="hname">'+h.name+'</div>'
+      +'<span class="bbadge '+(h.brand==="dormy"?"bd":"bn")+'">'+(h.brand==="dormy"?"DI":"野乃")+'</span></div>'
+      +'<div class="hmeta"><span>'+h.pref+'</span>'
+      +'<span class="pchip '+priceClass(dp.price,dp.live)+'">'+chip+'</span>'
+      +'</div></div>';
+  }).join("");
+  document.getElementById("count-bar").textContent=list.length+" 件表示 / 全 "+HOTELS.length+" 件";
+  document.getElementById("total-cnt").textContent="("+HOTELS.length+"件)";
+  HOTELS.forEach(function(h){
+    const inList=list.some(function(l){return l.id===h.id;});
+    if(markers[h.id]){ if(inList)map.addLayer(markers[h.id]); else map.removeLayer(markers[h.id]); }
+  });
+}
+function selectHotel(id){
+  selectedId=id;
+  const h=HOTELS.find(function(x){return x.id===id;});
+  if(!h)return;
+  map.setView([h.lat,h.lng],14,{animate:true});
+  if(markers[id])markers[id].openPopup();
+  renderList();
+  const card=document.querySelector('.hcard[data-id="'+id+'"]');
+  if(card)card.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+// ── テーマ ───────────────────────────────────────────────
+(function(){
+  const btn=document.getElementById("theme-btn");
+  let d=document.documentElement.getAttribute("data-theme")||"dark";
+  function setTheme(t){
+    d=t; document.documentElement.setAttribute("data-theme",t); refreshTile();
+    btn.innerHTML=t==="dark"
+      ?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+      :'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  }
+  setTheme(d);
+  btn.addEventListener("click",function(){setTheme(d==="dark"?"light":"dark");});
+})();
+
+document.getElementById("date-pick").value=today();
+document.getElementById("fetch-btn").addEventListener("click",fetchPrices);
+document.getElementById("search").addEventListener("input",function(e){searchQ=e.target.value;renderList();});
+document.querySelectorAll(".fbtn").forEach(function(b){
+  b.addEventListener("click",function(){
+    filterMode=b.dataset.f;
+    document.querySelectorAll(".fbtn").forEach(function(x){x.className="fbtn";});
+    b.classList.add(filterMode==="dormy"?"fd":filterMode==="nono"?"fn":"fa");
+    renderList();
+  });
+});
+document.getElementById("sort-sel").addEventListener("change",function(e){sortKey=e.target.value;renderList();});
+
+addMarkers(); renderList();
+</script>
+</body>
+</html>
