@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ドーミーイン・野乃 全国価格マップ 20260407-1325</title>
+<title>ドーミーイン・野乃 全国価格マップ 20260407-1700</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -125,7 +125,7 @@ input,select{font:inherit;color:inherit}
       <path d="M13 4 Q19 4 19 10 L19 22 M13 4 Q7 4 7 10 L7 22" stroke="var(--primary)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
       <circle cx="13" cy="14" r="2.5" fill="var(--primary)"/>
     </svg>
-    <span>ドーミーイン・野乃 価格マップ <span style="font-size:.625rem;opacity:.5;font-weight:400">20260407-1325</span></span>
+    <span>ドーミーイン・野乃 価格マップ <span style="font-size:.625rem;opacity:.5;font-weight:400">20260407-1700</span></span>
   </div>
   <div class="legend-pills">
     <div class="pill pill-dormy"><span class="dot" style="background:var(--dormy)"></span>ドーミーイン</div>
@@ -151,10 +151,10 @@ input,select{font:inherit;color:inherit}
   <div id="map"></div>
   <div id="price-legend">
     <h4>価格帯（1泊・1室）</h4>
-    <div class="lr"><div class="lsw" style="background:#22863a"></div>〜6,000円</div>
-    <div class="lr"><div class="lsw" style="background:#2d8fbf"></div>〜9,000円</div>
-    <div class="lr"><div class="lsw" style="background:#b07d00"></div>〜12,000円</div>
-    <div class="lr"><div class="lsw" style="background:#b5522a"></div>12,000円超</div>
+    <div class="lr"><div class="lsw" style="background:#22863a"></div>〜10,000円</div>
+    <div class="lr"><div class="lsw" style="background:#2d8fbf"></div>〜13,000円</div>
+    <div class="lr"><div class="lsw" style="background:#b07d00"></div>〜16,000円</div>
+    <div class="lr"><div class="lsw" style="background:#b5522a"></div>16,000円超</div>
     <div class="lr"><div class="lsw" style="background:#888"></div>参考値/未取得</div>
   </div>
   <aside id="sidebar">
@@ -234,8 +234,8 @@ let livePrice={};
 const today = () => new Date().toISOString().slice(0,10);
 const isDark = () => document.documentElement.getAttribute("data-theme")==="dark";
 
-function priceColor(p,live){ if(live)return"var(--primary)"; if(!p)return"#888"; if(p<=6000)return"#22863a"; if(p<=9000)return"#2d8fbf"; if(p<=12000)return"#b07d00"; return"#b5522a"; }
-function priceClass(p,live){ if(live)return"pc-live"; if(!p)return"pc-gray"; if(p<=6000)return"pc-lo"; if(p<=9000)return"pc-mid"; if(p<=12000)return"pc-mi"; return"pc-hi"; }
+function priceColor(p,live){ if(!p)return"#888"; if(p<=10000)return"#22863a"; if(p<=13000)return"#2d8fbf"; if(p<=16000)return"#b07d00"; return"#b5522a"; }
+function priceClass(p,live){ if(!p)return"pc-gray"; if(p<=10000)return"pc-lo"; if(p<=13000)return"pc-mid"; if(p<=16000)return"pc-mi"; return"pc-hi"; }
 function fmtPrice(p){ return p?"¥"+p.toLocaleString():"未設定"; }
 function getDP(h){ const lp=livePrice[h.hotelNo]; if(lp)return{price:lp.price,live:true,updated:lp.updated,checkin:lp.checkin}; return{price:h.price,live:false,updated:null}; }
 
