@@ -4,7 +4,7 @@ exports.handler = async (event) => {
 
   const res = await fetch(url, {
     headers: {
-      "Referer": "https://iridescent-biscotti-3634d5.netlify.app",
+      "Referer": "https://comforting-brioche-a3259e.netlify.app",
       "User-Agent": "Mozilla/5.0"
     }
   });
