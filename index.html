@@ -340,11 +340,17 @@ async function fetchPrices(){
       console.log("hotelNo="+no+" status="+resp.status+" body="+JSON.stringify(data).slice(0,200));
 
       if(data.error||data.errors){
-        const msg=data.errors?data.errors.errorMessage:(data.error_description||data.error);
-        const code=data.errors?data.errors.errorCode:"";
-        setStatus("❌ APIエラー "+code+": "+msg,"#b5522a");
-        btn.disabled=false; return;
-      }
+  const msg=data.errors?data.errors.errorMessage:(data.error_description||data.error);
+  const code=data.errors?data.errors.errorCode:'';
+  // DATA_NOT_FOUND・空室なしはスキップして次のホテルへ
+  if(msg&&(msg.includes('DATA_NOT_FOUND')||msg.includes('not found')||code===404)){
+    console.log('hotelNo='+no+' スキップ: '+msg);
+  } else {
+    setStatus('❌ APIエラー '+code+': '+msg,'#b5522a');
+    btn.disabled=false;
+    return;
+  }
+}
 
       const hotels=data.hotels||[];
       hotels.forEach(function(item){
