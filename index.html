@@ -338,7 +338,7 @@ async function fetchPrices(){
       const resp=await fetch(proxyUrl);
       const data=await resp.json();
       console.log("hotelNo="+no+" status="+resp.status+" body="+JSON.stringify(data).slice(0,200));
-
+        if(resp.status===404||resp.status===204){ continue; }
       if(data.error||data.errors){
   const msg=data.errors?data.errors.errorMessage:(data.error_description||data.error);
   const code=data.errors?data.errors.errorCode:'';
